@@ -1,4 +1,6 @@
 import { chromium, Browser, Page } from 'playwright';
+import { writeFile, mkdir } from 'fs/promises';
+import { join, extname } from 'path';
 
 export interface TweetData {
   author: string;
@@ -111,4 +113,48 @@ export async function scrapeTweet(url: string, options: ScrapeOptions = {}): Pro
   } finally {
     if (browser) await browser.close();
   }
+}
+
+export async function downloadMedia(
+  urls: string[],
+  tweetId: string,
+  outputDir: string
+): Promise<string[]> {
+  const downloaded: string[] = [];
+  
+  for (let i = 0; i < urls.length; i++) {
+    const url = urls[i];
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error(`Failed to download: ${url}`);
+        continue;
+      }
+      
+      // Detect extension from URL or content-type
+      let ext = extname(new URL(url).pathname).split('?')[0];
+      if (!ext) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('jpeg') || contentType.includes('jpg')) ext = '.jpg';
+        else if (contentType.includes('png')) ext = '.png';
+        else if (contentType.includes('gif')) ext = '.gif';
+        else if (contentType.includes('webp')) ext = '.webp';
+        else if (contentType.includes('mp4')) ext = '.mp4';
+        else ext = '.bin';
+      }
+      
+      const filename = `tweet_${tweetId}_${i}${ext}`;
+      const filepath = join(outputDir, filename);
+      
+      const buffer = Buffer.from(await response.arrayBuffer());
+      await writeFile(filepath, buffer);
+      
+      downloaded.push(filepath);
+      console.error(`Downloaded: ${filename}`);
+    } catch (error) {
+      console.error(`Error downloading ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+  
+  return downloaded;
 }

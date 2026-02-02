@@ -21,6 +21,9 @@ kai-tweet https://x.com/elonmusk/status/1234567890
 
 # Get tweet as plain text
 kai-tweet https://twitter.com/user/status/123456 --raw
+
+# Download media files to current directory
+kai-tweet https://x.com/user/status/123456 --download
 ```
 
 ## Output
@@ -66,6 +69,7 @@ console.log(tweet.text);
 - ✅ Works with both `x.com` and `twitter.com` URLs
 - ✅ No Twitter login required (public tweets only)
 - ✅ Extracts author, text, timestamp, media, likes, retweets
+- ✅ Download media files with `--download` flag
 - ✅ Graceful error handling for private/deleted tweets
 - ✅ 15 second timeout
 - ✅ Usable as CLI or library

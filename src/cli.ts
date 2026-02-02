@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { scrapeTweet, TweetData } from './scraper.js';
+import { scrapeTweet, downloadMedia, TweetData } from './scraper.js';
 
 function formatRaw(tweet: TweetData): string {
   const lines = [
@@ -23,12 +23,14 @@ Usage:
   kai-tweet <url> [options]
 
 Options:
-  --raw       Plain text output instead of JSON
-  --help, -h  Show this help message
+  --raw          Plain text output instead of JSON
+  --download, -d Download media files to current directory
+  --help, -h     Show this help message
 
 Examples:
   kai-tweet https://x.com/user/status/123456
   kai-tweet https://twitter.com/user/status/123456 --raw
+  kai-tweet https://x.com/user/status/123456 --download
 `);
 }
 
@@ -46,6 +48,7 @@ async function main(): Promise<void> {
   
   const url = args.find(a => !a.startsWith('-'));
   const raw = args.includes('--raw');
+  const download = args.includes('--download') || args.includes('-d');
   
   if (!url || !isValidUrl(url)) {
     console.error('Error: Please provide a valid X/Twitter URL');
@@ -55,6 +58,13 @@ async function main(): Promise<void> {
   
   try {
     const tweet = await scrapeTweet(url);
+    
+    // Download media if requested
+    if (download && tweet.media.length > 0) {
+      const tweetId = url.match(/status\/(\d+)/)?.[1] || 'unknown';
+      await downloadMedia(tweet.media, tweetId, process.cwd());
+    }
+    
     console.log(raw ? formatRaw(tweet) : JSON.stringify(tweet, null, 2));
   } catch (error) {
     console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
